@@ -27,7 +27,6 @@ class RenameItems:
     """Main process."""
 
     counter: int = 0
-    all_files: int = 0
 
     def __init__(
         self, constant: Constant, enum_strings: FileStart, filepath: str = ""
@@ -36,12 +35,14 @@ class RenameItems:
         self.constant = constant
         self.start: tuple = self.grab_starting_strings(enum_strings)
         self.filepath: str = filepath
+        self.all_files: int = self.count_items(self.filepath)
+        self.dir_content: Iterable[Path] = self.grab_files(
+            Path(self.filepath), self.start
+        )
 
-        if self.__check_folder_integrity():
-            self.dir_content: Iterable[Path] = self._grab_files(Path(self.filepath))
-            Utils.count_files(self.all_files, self.filepath)
-        else:
-            Utils.launch_exit("Error.\nPress Enter key to continue...")
+        if not self.__check_folder_integrity():
+            Utils.launch_exit("Error.")
+        Utils.broadcast_message((self.count_files(self.all_files, self.filepath)))
 
     def __check_folder_integrity(self) -> bool:
         """Call functions for checking several integrity checks."""
@@ -50,7 +51,7 @@ class RenameItems:
             (
                 self._folder_not_blank(),
                 self._check_folder_existence(folder),
-                self._folder_not_empty(folder),
+                self._folder_not_empty(),
             )
         )
 
@@ -59,9 +60,21 @@ class RenameItems:
         """Return a tuple with all elements to check as starting string."""
         return tuple(x.value for x in enum_strings)  # type: ignore
 
-    def _folder_not_empty(self, folder: Path) -> bool:
+    @staticmethod
+    def count_items(filepath: str) -> int:
+        """Count number of files inside a folder.
+
+        Exclude folders inside parent folder.
+        Args:
+            filepath (str): absolute path
+
+        Returns:
+            int: total number of files
+        """
+        return len(list(filter(lambda file: file.is_file(), Path(filepath).iterdir())))
+
+    def _folder_not_empty(self) -> bool:
         """Check folder include at least one file inside."""
-        self.all_files = len(list(self._grab_files(folder)))
         return self.all_files > 0
 
     def _folder_not_blank(self) -> bool:
@@ -74,24 +87,12 @@ class RenameItems:
         return folder.exists() and folder.is_dir()
 
     @staticmethod
-    def _grab_files(filepath: Path) -> Iterable[Path]:
+    def grab_files(filepath: Path, start: tuple[str]) -> Iterable[Path]:
         """Filter files inside a directory."""
-        return filter(lambda x: x.is_file(), filepath.glob("*"))
-
-    def filter_folder_by_name(self) -> Iterable[Path]:
-        """Filter folder files with a helper function."""
-        return filter(self._filter_helper_function, self.dir_content)
-
-    def _filter_helper_function(self, file: Path) -> bool:
-        """Return boolean value if file starts with elements from FileStart class.
-
-        Args:
-            file (Path): filepaths of files
-
-        Returns:
-            bool: boolean value
-        """
-        return file.name.startswith(self.start)
+        return filter(
+            lambda file: file.is_file() and file.name.startswith(start),
+            filepath.iterdir(),
+        )
 
     def iterate_filtered_files(self, filter_items: Iterable[Path]) -> str:
         """Iterate through an iterable with all files you want to rename.
@@ -103,8 +104,10 @@ class RenameItems:
             str: final result from operation
         """
         files: list[str] = [x.name for x in filter_items]
+        total_items: int = len(files)
         for file in files:
             self._rename_file(file)
+            self.add_one_item(total_items)
         return self.renamed_elements()
 
     def _rename_file(self, file: str) -> None:
@@ -116,7 +119,16 @@ class RenameItems:
         old_file = f"{self.filepath}/{file}"
         new_file: str = self.conform_filepath(file)
         os.rename(old_file, new_file)
+
+    def add_one_item(self, total: int) -> None:
+        """Add one item to counter and broadcast current item.
+
+        Args:
+            total (int): Total number of items
+        """
         self.counter += 1
+        message: str = self.log_info(self.counter, total)
+        Utils.broadcast_message(message)
 
     def renamed_elements(self) -> str:
         """Return result of operation."""
@@ -150,30 +162,44 @@ class RenameItems:
         """Substitute end dot with underscore dot so there are no identical files."""
         return re.sub("(.)([a-z]+)$", f"{self.constant.NEW_FILE}.\\2", string)
 
-    def __call__(self) -> str:
-        """Run the process if all checks are OK."""
-        files = self.filter_folder_by_name()
-        return self.iterate_filtered_files(files)
-
     def __repr__(self) -> str:
         """Show result of operation."""
-        return self.__call__()
+        return self.call_process(self.dir_content)
+
+    def call_process(self, folder: Iterable[Path]) -> str:
+        """Run the process if all checks are OK."""
+        return self.iterate_filtered_files(folder)
+
+    @staticmethod
+    def count_files(items: int, directory: str) -> str:
+        """Show how many files are inside a directory."""
+        return f"{items} files inside {directory}"
+
+    @staticmethod
+    def log_info(item: int, total: int) -> str:
+        """Show which file is being renamed."""
+        return f"Renaming item: {item}/{total}"
 
 
 class Utils:
     """Helper functions."""
 
     @staticmethod
-    def launch_exit(message: str = "Press Enter key to continue...") -> NoReturn:
+    def launch_exit(message: str = "") -> NoReturn:
         """Launch exit sequence."""
-        print(message)
+        cont: str = "Press Enter key to continue..."
+        if message != "":
+            final_message: str = f"{message}\n{cont}"
+        else:
+            final_message: str = cont
+        Utils.broadcast_message(final_message)
         input()
         sys.exit()
 
     @staticmethod
-    def count_files(items: int, directory: str) -> None:
-        """Show how many files are inside a directory."""
-        print(f"{items} files inside {directory}")
+    def broadcast_message(message: str) -> None:
+        """Print a message or log it."""
+        print(message)
 
 
 if __name__ == "__main__":
