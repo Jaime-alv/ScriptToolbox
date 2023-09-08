@@ -1,0 +1,17 @@
+[project]
+name = "helpful_cakes"
+version = "0.1.0"
+description = "Scripts to help out on a daily basis."
+readme = "README.md"
+requires-python = ">=3.7"
+license = { file = "LICENSE" }
+keywords = ["script", "automation"]
+authors = [{ name = "Jaime Alvarez", email = "jaime.af.git@gmail.es" }]
+classifiers = [
+    "Development Status :: 5 - Production/Stable",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.10",
+]
+
+[project.urls]
+"Source" = "https://github.com/Jaime-alv/helpful_cakes"

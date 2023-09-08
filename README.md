@@ -12,24 +12,38 @@ python3 script_name.py
 
 ## rename_folder.py
 
-Rename two folders back and forth.
+Rename two folders back and forth while preserving content.
 
-Set desired folders in Constant and let it go.
+Useful for working with different configuration folders that compete for the same name.
 
-```python
-class Constants(NamedTuple):
-    """Class system with constants."""
-    # original folder name
-    FOLDER: str = ".m2"
-    # surname used for original folder
-    DEFAULT: str = "default"
-    # alternative name
-    ALT: str = "Carrefour"
-    # where to look for FOLDER
-    HOME: str = "HOME"
-    # join character script uses for rename
-    JOIN: str = "_"
+### Usage
+
+Activate script with python global executable and add your target folder name
+
+```shell
+python3 ./script/rename_folder.py <folder>
 ```
+
+This will rename `folder` to `folder_original`, create a new `folder` if not exist, and get a logging message in your screen.
+
+If script is activated once more, `folder_original` is again `folder` and there is a new `folder_alt` with the old content.
+
+Content is preserved.
+
+By default, looks for `<folder>` at current working directory.
+
+### help
+
+```shell
+python3 ./script/rename_folder.py -h
+```
+
+Prints help and show the different options and flags that exist.
+
+- `-p`, `--path` absolute path where target folder is.
+- `-j`, `--join` joining character between folder.
+- `-d`, `--default` surname append for original folder.
+- `-a`, `--alternative` surname append for new folder.
 
 ## switcher.py
 
